@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusNet — Panel de Reportes y Auditoría Administrativa</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+/* ================================================================
+   CAMPUSNET — PANEL DE REPORTES Y ANALÍTICAS PARA ADMINISTRADORES
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg-page:        #0B1120;
+  --bg-panel:       #131D33;
+  --bg-card:        rgba(23, 34, 59, 0.88);
+  --bg-card-hover:  rgba(31, 46, 78, 0.96);
+  --bg-input:       #192542;
+  --bg-hover:       #24345B;
+  --bg-modal:       #121B30;
+
+  --indigo:         #6366F1;
+  --indigo-light:   #818CF8;
+  --purple:         #8B5CF6;
+  --pink:           #EC4899;
+  --cyan:           #06B6D4;
+  --cyan-light:     #67E8F9;
+  --emerald:        #10B981;
+  --emerald-light:  #34D399;
+  --amber:          #F59E0B;
+  --amber-light:    #FBBF24;
+  --rose:           #F43F5E;
+
+  --text-1:         #FFFFFF;
+  --text-2:         #E2E8F0;
+  --text-3:         #94A3B8;
+
+  --border:         rgba(255, 255, 255, 0.14);
+  --border-strong:  rgba(255, 255, 255, 0.28);
+  --border-glow:    rgba(99, 102, 241, 0.55);
+
+  --shadow-sm:      0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md:      0 8px 26px rgba(0, 0, 0, 0.45);
+  --shadow-lg:      0 18px 50px rgba(0, 0, 0, 0.6);
+  --shadow-glow:    0 0 25px rgba(245, 158, 11, 0.35);
+
+  --radius-sm:      10px;
+  --radius-md:      14px;
+  --radius-lg:      20px;
+  --radius-xl:      26px;
+
+  --navbar-h:       68px;
+  --transition:     all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-2);
+  min-height: 100vh;
+  padding-top: var(--navbar-h);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Ambient glow */
+body::before {
+  content: '';
+  position: fixed;
+  top: -200px;
+  left: 10%;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, rgba(99, 102, 241, 0.08) 40%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -200px;
+  right: 5%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, rgba(236, 72, 153, 0.08) 50%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+a { color: var(--cyan); text-decoration: none; transition: var(--transition); }
+a:hover { color: var(--cyan-light); }
+button { cursor: pointer; border: none; outline: none; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.6); }
+}
+
+/* Navbar */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--navbar-h);
+  background: rgba(19, 29, 51, 0.92);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 1.5rem;
+  z-index: 1000;
+  backdrop-filter: blur(24px);
+  gap: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+}
+
+.nav-brand {
+  display: flex; align-items: center; gap: 0.75rem;
+  text-decoration: none; flex-shrink: 0;
+}
+.brand-icon {
+  width: 42px; height: 42px;
+  background: linear-gradient(135deg, #F59E0B 0%, #EC4899 50%, #6366F1 100%);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: white; flex-shrink: 0;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4);
+}
+.brand-titles { display: flex; flex-direction: column; }
+.brand-name {
+  font-size: 1.2rem; font-weight: 900; color: #fff;
+  letter-spacing: -0.02em; display: flex; align-items: center; gap: 0.35rem;
+}
+.brand-sub {
+  font-size: 0.68rem; font-weight: 800; color: var(--amber-light);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+.nav-actions {
+  display: flex; align-items: center; gap: 0.75rem; margin-left: auto;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #111827; font-weight: 800; font-size: 0.84rem;
+  padding: 0.55rem 1.15rem; border-radius: 12px;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  transition: var(--transition);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+}
+
+.btn-secondary {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: #fff; font-weight: 700; font-size: 0.84rem;
+  padding: 0.55rem 1.1rem; border-radius: 12px;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  transition: var(--transition);
+}
+.btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--cyan);
+  transform: translateY(-2px);
+}
+
+.btn-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.05rem;
+  transition: var(--transition);
+}
+.btn-icon:hover {
+  background: var(--bg-hover);
+  color: #fff;
+  border-color: var(--cyan);
+  transform: translateY(-2px);
+}
+
+.badge-admin {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #111827; font-size: 0.7rem; font-weight: 900;
+  padding: 3px 10px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+.badge-student {
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  color: var(--cyan-light); font-size: 0.7rem; font-weight: 800;
+  padding: 3px 9px; border-radius: 999px;
+}
+
+/* Layout */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Top Banner */
+.admin-header {
+  background: linear-gradient(135deg, rgba(23, 34, 59, 0.95), rgba(30, 41, 69, 0.85));
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.admin-header::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; width: 350px; height: 100%;
+  background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.15), transparent 70%);
+  pointer-events: none;
+}
+.admin-header-title {
+  display: flex; align-items: center; gap: 1rem;
+}
+.admin-header-icon {
+  width: 54px; height: 54px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #F59E0B, #EA580C);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; color: #fff;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+}
+.admin-header-text h1 {
+  font-size: 1.65rem; font-weight: 900; color: #fff; letter-spacing: -0.02em;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.admin-header-text p {
+  color: var(--text-3); font-size: 0.9rem; margin-top: 0.25rem;
+}
+
+.admin-header-tools {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  z-index: 2;
+}
+
+/* KPI Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.kpi-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-md);
+}
+.kpi-card-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.kpi-card-title {
+  font-size: 0.82rem; font-weight: 800; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.kpi-card-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem;
+}
+.kpi-card-icon.amber {
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--amber-light);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.kpi-card-icon.cyan {
+  background: rgba(6, 182, 212, 0.18);
+  color: var(--cyan-light);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+.kpi-card-icon.indigo {
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--indigo-light);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+.kpi-card-icon.emerald {
+  background: rgba(16, 185, 129, 0.18);
+  color: var(--emerald-light);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.kpi-card-icon.pink {
+  background: rgba(236, 72, 153, 0.18);
+  color: #F472B6;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+}
+.kpi-card-value {
+  font-size: 2.1rem; font-weight: 900; color: #fff;
+  line-height: 1.1; margin-bottom: 0.35rem;
+}
+.kpi-card-detail {
+  font-size: 0.78rem; color: var(--text-3);
+  display: flex; align-items: center; gap: 0.35rem;
+}
+.kpi-trend-up { color: var(--emerald-light); font-weight: 700; }
+
+/* Charts Section */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column;
+}
+.chart-card.col-8 { grid-column: span 8; }
+.chart-card.col-4 { grid-column: span 4; }
+.chart-card.col-6 { grid-column: span 6; }
+.chart-card.col-12 { grid-column: span 12; }
+
+@media (max-width: 1024px) {
+  .chart-card.col-8, .chart-card.col-4, .chart-card.col-6 { grid-column: span 12; }
+}
+
+.chart-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.chart-title {
+  font-size: 1.05rem; font-weight: 800; color: #fff;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.chart-subtitle {
+  font-size: 0.75rem; color: var(--text-3); margin-top: 0.15rem;
+}
+.chart-container {
+  position: relative; flex: 1; min-height: 260px; width: 100%;
+}
+
+/* Tabs & Tables */
+.section-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.tabs-nav {
+  display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem; margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+.tab-btn {
+  padding: 0.65rem 1.2rem;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 0.88rem; font-weight: 700;
+  border-radius: 10px;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  transition: var(--transition);
+}
+.tab-btn:hover {
+  background: var(--bg-hover); color: #fff;
+}
+.tab-btn.active {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--amber-light);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.table-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem;
+}
+.table-search {
+  position: relative; flex: 1; max-width: 380px;
+}
+.table-search input {
+  width: 100%;
+  padding: 0.6rem 1rem 0.6rem 2.4rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: #fff; font-size: 0.85rem;
+}
+.table-search input:focus {
+  outline: none; border-color: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.3);
+}
+.table-search i {
+  position: absolute; left: 0.85rem; top: 50%;
+  transform: translateY(-50%); color: var(--text-3); font-size: 0.85rem;
+}
+
+.table-responsive {
+  overflow-x: auto; border-radius: 12px; border: 1px solid var(--border);
+}
+table {
+  width: 100%; border-collapse: collapse; text-align: left; font-size: 0.86rem;
+}
+thead th {
+  background: var(--bg-panel);
+  color: var(--text-3);
+  font-weight: 800; font-size: 0.76rem;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+tbody td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-2);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.user-cell {
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.user-cell img {
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+  border: 1.5px solid var(--border);
+}
+.user-cell-name {
+  font-weight: 700; color: #fff; font-size: 0.88rem;
+}
+.user-cell-sub {
+  font-size: 0.74rem; color: var(--text-3);
+}
+
+/* Category pills in table */
+.cat-tag {
+  font-size: 0.72rem; font-weight: 800; padding: 2px 8px;
+  border-radius: 6px; display: inline-block;
+}
+.cat-tag.general { background: rgba(99,102,241,0.2); color: #A5B4FC; }
+.cat-tag.duda { background: rgba(245,158,11,0.2); color: #FCD34D; }
+.cat-tag.material { background: rgba(16,185,129,0.2); color: #6EE7B7; }
+.cat-tag.proyecto { background: rgba(6,182,212,0.2); color: #67E8F9; }
+.cat-tag.aviso { background: rgba(236,72,153,0.2); color: #F472B6; }
+
+/* Status dot */
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;
+}
+.status-dot.active { background: var(--emerald-light); box-shadow: 0 0 8px var(--emerald); }
+
+/* Unauthorized / Access Denied Modal */
+.access-denied-overlay {
+  position: fixed; inset: 0;
+  background: rgba(11, 17, 32, 0.96);
+  backdrop-filter: blur(16px);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.access-denied-card {
+  background: var(--bg-modal);
+  border: 1.5px solid rgba(244, 63, 94, 0.5);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  max-width: 520px;
+  text-align: center;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.7), 0 0 30px rgba(244, 63, 94, 0.2);
+  animation: fadeIn 0.3s ease;
+}
+.access-denied-icon {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: rgba(244, 63, 94, 0.15);
+  border: 2px solid var(--rose);
+  color: var(--rose);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; margin: 0 auto 1.5rem;
+}
+
+/* Spinner */
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 2rem auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast-container {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 10000;
+  display: flex; flex-direction: column; gap: 0.6rem; pointer-events: none;
+}
+.toast {
+  padding: 0.75rem 1.25rem; border-radius: 12px; font-size: 0.88rem; font-weight: 600;
+  display: flex; align-items: center; gap: 0.6rem; box-shadow: var(--shadow-lg);
+  pointer-events: auto; animation: fadeIn 0.3s ease; color: #fff;
+}
+.toast.success { background: #059669; border: 1px solid #34D399; }
+.toast.error { background: #DC2626; border: 1px solid #F87171; }
+.toast.info { background: #4F46E5; border: 1px solid #818CF8; }
+
+/* Print styles */
+@media print {
+  body { background: #fff !important; color: #000 !important; padding-top: 0 !important; }
+  .navbar, .admin-header-tools, .tabs-nav, .table-toolbar, .toast-container, .btn-primary, .btn-secondary, .btn-icon {
+    display: none !important;
+  }
+  .container { max-width: 100% !important; padding: 0 !important; }
+  .admin-header, .kpi-card, .chart-card, .section-panel {
+    background: #fff !important; color: #000 !important; border: 1px solid #ccc !important;
+    box-shadow: none !important; break-inside: avoid;
+  }
+  .admin-header-text h1, .kpi-card-value, .chart-title, .user-cell-name {
+    color: #000 !important;
+  }
+  table { border-collapse: collapse; }
+  thead th { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; }
+  tbody td { color: #000 !important; border: 1px solid #eee !important; }
+}
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <a href="feed.html" class="nav-brand">
+      <div class="brand-icon">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <div class="brand-titles">
+        <span class="brand-name">CampusNet</span>
+        <span class="brand-sub"><i class="fa-solid fa-shield-halved"></i> Módulo de Auditoría</span>
+      </div>
+    </a>
+
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-left:0.5rem;">
+      <span class="badge-admin"><i class="fa-solid fa-crown"></i> Panel de Administración</span>
+    </div>
+
+    <div class="nav-actions">
+      <a href="feed.html" class="btn-secondary" title="Ir a la Página Principal">
+        <i class="fa-solid fa-house"></i>
+        <span>Página Principal</span>
+      </a>
+
+      <a href="messages.html" class="btn-secondary" title="Ir a Mensajería y Tutorías">
+        <i class="fa-solid fa-comments"></i>
+        <span>Tutorías</span>
+      </a>
+
+      <div style="display:flex;align-items:center;gap:0.6rem;padding-left:0.5rem;border-left:1px solid var(--border);">
+        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" id="navAvatar" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--amber);" alt="Admin">
+        <div style="display:flex;flex-direction:column;text-align:left;">
+          <span style="font-size:0.82rem;font-weight:700;color:#fff;" id="navAdminName">Docente</span>
+          <span style="font-size:0.65rem;font-weight:800;color:var(--amber-light);">ADMINISTRADOR</span>
+        </div>
+      </div>
+
+      <button class="btn-icon" onclick="logout()" title="Cerrar Sesión">
+        <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--rose);"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ACCESS DENIED MODAL (HIDDEN BY DEFAULT) -->
+  <div class="access-denied-overlay" id="accessDeniedModal" style="display:none;">
+    <div class="access-denied-card">
+      <div class="access-denied-icon">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h2 style="font-size:1.5rem;font-weight:900;color:#fff;margin-bottom:0.75rem;">Acceso Restringido</h2>
+      <p style="color:var(--text-3);font-size:0.92rem;line-height:1.5;margin-bottom:1.5rem;">
+        Esta área contiene reportes confidenciales, auditoría institucional y métricas globales de CampusNet. Solo los <strong>Docentes y Administradores</strong> acreditados pueden visualizar este panel.
+      </p>
+      <div style="display:flex;gap:0.75rem;justify-content:center;">
+        <a href="feed.html" class="btn-primary" style="padding:0.75rem 1.5rem;font-size:0.9rem;">
+          <i class="fa-solid fa-arrow-left"></i> Volver a la Página Principal
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="container" id="adminMainContent">
+    
+    <!-- TOP HEADER / BANNER -->
+    <section class="admin-header">
+      <div class="admin-header-title">
+        <div class="admin-header-icon">
+          <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div class="admin-header-text">
+          <h1>Reportes Institucionales y Analíticas</h1>
+          <p>Métricas en tiempo real sobre el uso del campus, participación de estudiantes, publicaciones y tutorías.</p>
+        </div>
+      </div>
+
+      <div class="admin-header-tools">
+        <button class="btn-secondary" onclick="refreshAdminData()" id="btnRefresh">
+          <i class="fa-solid fa-rotate"></i>
+          <span>Actualizar Datos</span>
+        </button>
+
+        <button class="btn-secondary" onclick="exportGeneralCSV()">
+          <i class="fa-solid fa-file-csv" style="color:var(--emerald-light);"></i>
+          <span>Exportar Todo (CSV)</span>
+        </button>
+
+        <button class="btn-primary" onclick="window.print()">
+          <i class="fa-solid fa-print"></i>
+          <span>Imprimir Reporte</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- KPI CARDS -->
+    <section class="kpi-grid">
+      <!-- 1. Usuarios Totales -->
+      <div class="kpi-card">
+        <div class="kpi-card-top">
+          <span class="kpi-card-title">Comunidad Académica</span>
+          <div class="kpi-card-icon amber">
+            <i class="fa-solid fa-users"></i>
+          </div>
+        </div>
+        <div class="kpi-card-value" id="kpiTotalUsers">-</div>
+        <div class="kpi-card-detail" id="kpiUsersBreakdown">
+          <span class="kpi-trend-up"><i class="fa-solid fa-check"></i> Cuentas verificadas</span>
+        </div>
+      </div>
+
+      <!-- 2. Publicaciones -->
+      <div class="kpi-card">
+        <div class="kpi-card-top">
+          <span class="kpi-card-title">Publicaciones Realizadas</span>
+          <div class="kpi-card-icon cyan">
+            <i class="fa-solid fa-newspaper"></i>
+          </div>
+        </div>
+        <div class="kpi-card-value" id="kpiTotalPosts">-</div>
+        <div class="kpi-card-detail" id="kpiPostsDetail">
+          <span>En el muro académico</span>
+        </div>
+      </div>
+
+      <!-- 3. Interacciones -->
+      <div class="kpi-card">
+        <div class="kpi-card-top">
+          <span class="kpi-card-title">Interacción y Debate</span>
+          <div class="kpi-card-icon emerald">
+            <i class="fa-solid fa-comments"></i>
+          </div>
+        </div>
+        <div class="kpi-card-value" id="kpiTotalInteractions">-</div>
+        <div class="kpi-card-detail" id="kpiInteractionsDetail">
+          <span>Likes y Comentarios</span>
+        </div>
+      </div>
+
+      <!-- 4. Tutorías y Mensajes -->
+      <div class="kpi-card">
+        <div class="kpi-card-top">
+          <span class="kpi-card-title">Tutorías y Mensajería</span>
+          <div class="kpi-card-icon indigo">
+            <i class="fa-solid fa-message"></i>
+          </div>
+        </div>
+        <div class="kpi-card-value" id="kpiTotalMessages">-</div>
+        <div class="kpi-card-detail" id="kpiMessagesDetail">
+          <span>Mensajes privados de apoyo</span>
+        </div>
+      </div>
+
+      <!-- 5. Tasa de Compromiso -->
+      <div class="kpi-card">
+        <div class="kpi-card-top">
+          <span class="kpi-card-title">Engagement Estudiantil</span>
+          <div class="kpi-card-icon pink">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+        </div>
+        <div class="kpi-card-value" id="kpiEngagement">-</div>
+        <div class="kpi-card-detail">
+          <span class="kpi-trend-up"><i class="fa-solid fa-arrow-trend-up"></i> Índice de interacción</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHARTS SECTION -->
+    <section class="charts-grid">
+      
+      <!-- Chart 1: Distribución Temática por Materia -->
+      <div class="chart-card col-4">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-pie" style="color:var(--amber);"></i>
+              <span>Temas & Categorías</span>
+            </div>
+            <div class="chart-subtitle">Distribución de dudas y materiales</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Actividad Temporal -->
+      <div class="chart-card col-8">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">
+              <i class="fa-solid fa-chart-line" style="color:var(--cyan);"></i>
+              <span>Tendencia de Actividad en Campus</span>
+            </div>
+            <div class="chart-subtitle">Histórico de publicaciones y respuestas pedagógicas</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="timelineChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Roles en la Comunidad -->
+      <div class="chart-card col-6">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">
+              <i class="fa-solid fa-users-gear" style="color:var(--indigo-light);"></i>
+              <span>Composición de Roles</span>
+            </div>
+            <div class="chart-subtitle">Docentes vs Estudiantes matriculados</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="rolesChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 4: Tipos de Interacciones -->
+      <div class="chart-card col-6">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">
+              <i class="fa-solid fa-heart-pulse" style="color:var(--pink);"></i>
+              <span>Canales de Retroalimentación</span>
+            </div>
+            <div class="chart-subtitle">Likes, Comentarios y Mensajes de tutoría</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="interactionsChart"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- TABLES & REPORTS PANEL -->
+    <section class="section-panel">
+      
+      <!-- Tabs Selector -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" id="tabBtnUsers" onclick="switchTab('users')">
+          <i class="fa-solid fa-users"></i>
+          <span>Reporte de Integrantes (<span id="tabCountUsers">0</span>)</span>
+        </button>
+
+        <button class="tab-btn" id="tabBtnPosts" onclick="switchTab('posts')">
+          <i class="fa-solid fa-newspaper"></i>
+          <span>Auditoría de Publicaciones (<span id="tabCountPosts">0</span>)</span>
+        </button>
+
+        <button class="tab-btn" id="tabBtnDiagnostics" onclick="switchTab('diagnostics')">
+          <i class="fa-solid fa-clipboard-check"></i>
+          <span>Diagnóstico Institucional y Recomendaciones</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: INTEGRANTES -->
+      <div id="tabContentUsers">
+        <div class="table-toolbar">
+          <div class="table-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="userSearchInput" placeholder="Buscar por nombre, correo o usuario..." oninput="filterUsersTable(this.value)">
+          </div>
+
+          <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+            <select id="userRoleFilter" class="btn-secondary" style="background:var(--bg-input);padding:0.55rem 0.9rem;" onchange="filterUsersTable()">
+              <option value="all">Todos los Roles</option>
+              <option value="docente">👑 Docentes / Admins</option>
+              <option value="student">🎓 Estudiantes</option>
+            </select>
+
+            <button class="btn-secondary" onclick="exportUsersCSV()">
+              <i class="fa-solid fa-file-arrow-down" style="color:var(--cyan);"></i>
+              <span>Descargar CSV Miembros</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Integrante</th>
+                <th>Rol Asignado</th>
+                <th>Fecha de Registro</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr>
+                <td colspan="5" style="text-align:center;padding:2rem;">
+                  <div class="spinner"></div>
+                  <p style="color:var(--text-3);">Cargando reporte de integrantes...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: AUDITORÍA DE PUBLICACIONES -->
+      <div id="tabContentPosts" style="display:none;">
+        <div class="table-toolbar">
+          <div class="table-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="postSearchInput" placeholder="Buscar en publicaciones o autores..." oninput="filterPostsTable(this.value)">
+          </div>
+
+          <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+            <select id="postCatFilter" class="btn-secondary" style="background:var(--bg-input);padding:0.55rem 0.9rem;" onchange="filterPostsTable()">
+              <option value="all">Todas las Categorías</option>
+              <option value="General">💬 General</option>
+              <option value="Duda">💡 Pregunta / Duda</option>
+              <option value="Material">📚 Material</option>
+              <option value="Proyecto">🚀 Proyecto</option>
+              <option value="Aviso">📢 Aviso Oficial</option>
+            </select>
+
+            <button class="btn-secondary" onclick="exportPostsCSV()">
+              <i class="fa-solid fa-file-arrow-down" style="color:var(--emerald-light);"></i>
+              <span>Descargar CSV Publicaciones</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Autor</th>
+                <th>Categoría</th>
+                <th>Contenido</th>
+                <th>Adjunto</th>
+                <th>Reacciones</th>
+                <th>Comentarios</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="postsTableBody">
+              <tr>
+                <td colspan="7" style="text-align:center;padding:2rem;">
+                  <div class="spinner"></div>
+                  <p style="color:var(--text-3);">Cargando publicaciones...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: DIAGNÓSTICO INSTITUCIONAL -->
+      <div id="tabContentDiagnostics" style="display:none;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:1.5rem;">
+          
+          <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:14px;padding:1.5rem;">
+            <h3 style="font-size:1.1rem;color:#fff;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+              <i class="fa-solid fa-circle-check" style="color:var(--emerald-light);"></i>
+              Diagnóstico de Clima de Aprendizaje
+            </h3>
+            <div id="diagClimate" style="color:var(--text-2);font-size:0.88rem;line-height:1.6;">
+              Calculando indicadores de interacción y resolución de dudas...
+            </div>
+          </div>
+
+          <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:14px;padding:1.5rem;">
+            <h3 style="font-size:1.1rem;color:#fff;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+              <i class="fa-solid fa-trophy" style="color:var(--amber-light);"></i>
+              Estudiantes Más Destacados
+            </h3>
+            <div id="topStudentsList" style="display:flex;flex-direction:column;gap:0.75rem;">
+              Cargando tabla de aportes...
+            </div>
+          </div>
+
+          <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:14px;padding:1.5rem;grid-column:1/-1;">
+            <h3 style="font-size:1.1rem;color:#fff;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+              <i class="fa-solid fa-lightbulb" style="color:var(--cyan);"></i>
+              Recomendaciones para la Práctica Docente
+            </h3>
+            <ul id="recommendationsList" style="padding-left:1.25rem;color:var(--text-2);font-size:0.88rem;line-height:1.8;">
+              <li>Fomentar publicaciones de la categoría <strong>#Duda</strong> al inicio de cada semana para resolver bloqueos a tiempo.</li>
+              <li>Aprovechar la función de <strong>Sala Virtual</strong> para sesiones de consulta síncrona en los horarios de mayor tráfico.</li>
+              <li>Reconocer periódicamente a los estudiantes con mayor índice de ayuda a sus pares en los hilos de comentarios.</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+const SUPABASE_URL = 'https://sqslyuhrfjvspsupjylh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_DasYg9xJ23y5AfZMXDAl_w_xkLuMTFw';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// State variables
+let currentUser = null;
+let currentProfile = null;
+let allProfiles = [];
+let allPosts = [];
+let allComments = [];
+let allLikes = [];
+let allMessages = [];
+
+// Chart instances
+let chartCategory = null;
+let chartTimeline = null;
+let chartRoles = null;
+let chartInteractions = null;
+
+// Toast helper
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  let icon = 'fa-circle-info';
+  if (type === 'success') icon = 'fa-circle-check';
+  if (type === 'error') icon = 'fa-triangle-exclamation';
+  toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// Role detector
+function isDocenteProfile(profile) {
+  if (!profile) return false;
+  const bio = (profile.bio || '').toLowerCase();
+  const username = (profile.username || '').toLowerCase();
+  const fullName = (profile.full_name || '').toLowerCase();
+  return bio.includes('docente') || bio.includes('profesor') || bio.includes('admin') ||
+         username.includes('docente') || username.includes('profesor') ||
+         fullName.includes('prof.') || fullName.includes('ing.') || fullName.includes('lic.');
+}
+
+// Auth & Admin check
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const { data: { user }, error: authErr } = await sb.auth.getUser();
+    if (!user || authErr) {
+      window.location.href = 'index.html';
+      return;
+    }
+    currentUser = user;
+
+    // Fetch user profile
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    currentProfile = profile;
+
+    // Security Gate: Verify Admin / Docente privileges
+    const isAdmin = isDocenteProfile(profile);
+    if (!isAdmin) {
+      document.getElementById('accessDeniedModal').style.display = 'flex';
+      document.getElementById('adminMainContent').style.display = 'none';
+      return;
+    }
+
+    // Set navbar info
+    const adminName = profile?.full_name || profile?.username || 'Administrador';
+    document.getElementById('navAdminName').textContent = adminName;
+    if (profile?.avatar_url) {
+      document.getElementById('navAvatar').src = profile.avatar_url;
+    }
+
+    // Load full admin analytics
+    await loadAllAdminData();
+
+  } catch (err) {
+    console.error('Error during init:', err);
+    showToast('Error al inicializar sesión: ' + err.message, 'error');
+  }
+});
+
+// Main data fetcher
+async function loadAllAdminData() {
+  const refreshBtn = document.getElementById('btnRefresh');
+  if (refreshBtn) refreshBtn.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i><span>Cargando...</span>';
+
+  try {
+    // 1. Fetch profiles
+    const { data: profiles, error: pErr } = await sb
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!pErr) allProfiles = profiles || [];
+
+    // 2. Fetch posts
+    const { data: posts, error: postErr } = await sb
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!postErr) allPosts = posts || [];
+
+    // 3. Fetch comments
+    const { data: comments, error: cErr } = await sb
+      .from('comments')
+      .select('*');
+    if (!cErr) allComments = comments || [];
+
+    // 4. Fetch likes
+    const { data: likes, error: lErr } = await sb
+      .from('likes')
+      .select('*');
+    if (!lErr) allLikes = likes || [];
+
+    // 5. Fetch messages
+    const { data: messages, error: mErr } = await sb
+      .from('messages')
+      .select('*');
+    if (!mErr) allMessages = messages || [];
+
+    // Calculate and render all metrics
+    renderKPIs();
+    renderCharts();
+    renderUsersTable();
+    renderPostsTable();
+    renderDiagnostics();
+
+    showToast('Datos analíticos actualizados con éxito', 'success');
+
+  } catch (err) {
+    console.error('Error fetching admin data:', err);
+    showToast('Error al obtener datos: ' + err.message, 'error');
+  } finally {
+    if (refreshBtn) refreshBtn.innerHTML = '<i class="fa-solid fa-rotate"></i><span>Actualizar Datos</span>';
+  }
+}
+
+function refreshAdminData() {
+  loadAllAdminData();
+}
+
+// ── RENDER KPIS ────────────────────────────────────────────────────────
+function renderKPIs() {
+  const totalUsers = allProfiles.length;
+  const docentes = allProfiles.filter(p => isDocenteProfile(p)).length;
+  const estudiantes = totalUsers - docentes;
+
+  document.getElementById('kpiTotalUsers').textContent = totalUsers;
+  document.getElementById('kpiUsersBreakdown').innerHTML = `
+    <span style="color:#FBBF24;font-weight:700;">${docentes} Docentes</span>
+    <span style="color:var(--text-3);margin:0 4px;">•</span>
+    <span style="color:var(--cyan-light);font-weight:700;">${estudiantes} Estudiantes</span>
+  `;
+
+  document.getElementById('kpiTotalPosts').textContent = allPosts.length;
+  const withImages = allPosts.filter(p => p.image_url).length;
+  document.getElementById('kpiPostsDetail').textContent = `${withImages} con recursos multimedia`;
+
+  const totalInteractions = allLikes.length + allComments.length;
+  document.getElementById('kpiTotalInteractions').textContent = totalInteractions;
+  document.getElementById('kpiInteractionsDetail').textContent = `${allLikes.length} Likes • ${allComments.length} Comentarios`;
+
+  document.getElementById('kpiTotalMessages').textContent = allMessages.length;
+  document.getElementById('kpiMessagesDetail').textContent = `En canales y consultas directas`;
+
+  // Engagement rate
+  const engagement = totalUsers > 0 ? ((totalInteractions + allPosts.length) / totalUsers).toFixed(1) : 0;
+  document.getElementById('kpiEngagement').textContent = `${engagement}`;
+
+  document.getElementById('tabCountUsers').textContent = totalUsers;
+  document.getElementById('tabCountPosts').textContent = allPosts.length;
+}
+
+// ── CATEGORY PARSER ───────────────────────────────────────────────────
+function extractCategory(post) {
+  const text = post.content || '';
+  if (text.startsWith('[Duda]')) return 'Duda';
+  if (text.startsWith('[Material]')) return 'Material';
+  if (text.startsWith('[Proyecto]')) return 'Proyecto';
+  if (text.startsWith('[Aviso]')) return 'Aviso';
+  return 'General';
+}
+
+function cleanPostContent(post) {
+  let text = post.content || '';
+  return text.replace(/^\[(General|Duda|Material|Proyecto|Aviso)\]\s*/i, '');
+}
+
+// ── RENDER CHARTS ─────────────────────────────────────────────────────
+function renderCharts() {
+  // 1. Categories Breakdown
+  const catCounts = { 'General': 0, 'Duda': 0, 'Material': 0, 'Proyecto': 0, 'Aviso': 0 };
+  allPosts.forEach(p => {
+    const cat = extractCategory(p);
+    if (catCounts[cat] !== undefined) catCounts[cat]++;
+    else catCounts['General']++;
+  });
+
+  const ctxCat = document.getElementById('categoryChart').getContext('2d');
+  if (chartCategory) chartCategory.destroy();
+  chartCategory = new Chart(ctxCat, {
+    type: 'doughnut',
+    data: {
+      labels: ['General', 'Preguntas/Dudas', 'Material/Apuntes', 'Proyectos/Código', 'Avisos Oficiales'],
+      datasets: [{
+        data: [
+          catCounts['General'],
+          catCounts['Duda'],
+          catCounts['Material'],
+          catCounts['Proyecto'],
+          catCounts['Aviso']
+        ],
+        backgroundColor: ['#6366F1', '#F59E0B', '#10B981', '#06B6D4', '#EC4899'],
+        borderWidth: 2,
+        borderColor: '#131D33'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#E2E8F0', font: { family: 'Inter', size: 11 }, padding: 12 }
+        }
+      },
+      cutout: '65%'
+    }
+  });
+
+  // 2. Timeline chart (Activity by day/month)
+  const daysMap = {};
+  // Group posts by date
+  allPosts.forEach(p => {
+    const d = new Date(p.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+    if (!daysMap[d]) daysMap[d] = { posts: 0, comments: 0 };
+    daysMap[d].posts++;
+  });
+  // Group comments by date
+  allComments.forEach(c => {
+    const d = new Date(c.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+    if (!daysMap[d]) daysMap[d] = { posts: 0, comments: 0 };
+    daysMap[d].comments++;
+  });
+
+  // Sort dates
+  const timelineLabels = Object.keys(daysMap).slice(-10);
+  if (timelineLabels.length === 0) {
+    timelineLabels.push('Hoy');
+    daysMap['Hoy'] = { posts: 0, comments: 0 };
+  }
+  const postsTimeline = timelineLabels.map(l => daysMap[l]?.posts || 0);
+  const commentsTimeline = timelineLabels.map(l => daysMap[l]?.comments || 0);
+
+  const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
+  if (chartTimeline) chartTimeline.destroy();
+  chartTimeline = new Chart(ctxTimeline, {
+    type: 'line',
+    data: {
+      labels: timelineLabels,
+      datasets: [
+        {
+          label: 'Publicaciones',
+          data: postsTimeline,
+          borderColor: '#06B6D4',
+          backgroundColor: 'rgba(6, 182, 212, 0.15)',
+          fill: true,
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 4,
+          pointBackgroundColor: '#06B6D4'
+        },
+        {
+          label: 'Comentarios y Respuestas',
+          data: commentsTimeline,
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245, 158, 11, 0.12)',
+          fill: true,
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 4,
+          pointBackgroundColor: '#F59E0B'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: '#E2E8F0', font: { family: 'Inter', size: 12 } }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.06)' },
+          ticks: { color: '#94A3B8', font: { family: 'Inter', size: 11 } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255, 255, 255, 0.06)' },
+          ticks: { color: '#94A3B8', stepSize: 1, font: { family: 'Inter', size: 11 } }
+        }
+      }
+    }
+  });
+
+  // 3. Roles Chart
+  const docCount = allProfiles.filter(p => isDocenteProfile(p)).length;
+  const stuCount = allProfiles.length - docCount;
+
+  const ctxRoles = document.getElementById('rolesChart').getContext('2d');
+  if (chartRoles) chartRoles.destroy();
+  chartRoles = new Chart(ctxRoles, {
+    type: 'bar',
+    data: {
+      labels: ['Docentes / Administradores', 'Estudiantes'],
+      datasets: [{
+        label: 'Integrantes',
+        data: [docCount, stuCount],
+        backgroundColor: ['#F59E0B', '#06B6D4'],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#E2E8F0', font: { family: 'Inter', weight: 600 } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255, 255, 255, 0.06)' },
+          ticks: { color: '#94A3B8', stepSize: 1 }
+        }
+      }
+    }
+  });
+
+  // 4. Interactions Breakdown
+  const ctxInter = document.getElementById('interactionsChart').getContext('2d');
+  if (chartInteractions) chartInteractions.destroy();
+  chartInteractions = new Chart(ctxInter, {
+    type: 'bar',
+    data: {
+      labels: ['Reacciones / Likes', 'Comentarios', 'Mensajes Directos'],
+      datasets: [{
+        label: 'Total Realizado',
+        data: [allLikes.length, allComments.length, allMessages.length],
+        backgroundColor: ['#EC4899', '#10B981', '#6366F1'],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255, 255, 255, 0.06)' },
+          ticks: { color: '#94A3B8', stepSize: 1 }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#E2E8F0', font: { family: 'Inter', weight: 600 } }
+        }
+      }
+    }
+  });
+}
+
+// ── RENDER USERS TABLE ────────────────────────────────────────────────
+function renderUsersTable(filteredList = null) {
+  const tbody = document.getElementById('usersTableBody');
+  const list = filteredList || allProfiles;
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-3);">No se encontraron integrantes que coincidan con la búsqueda.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(p => {
+    const isDoc = isDocenteProfile(p);
+    const avatar = p.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+    const name = p.full_name || p.username || 'Usuario';
+    const username = p.username ? `@${p.username}` : (p.id ? p.id.substring(0, 8) + '...' : '');
+    const date = p.created_at ? new Date(p.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Reciente';
+
+    return `
+      <tr>
+        <td>
+          <div class="user-cell">
+            <img src="${avatar}" alt="Avatar">
+            <div>
+              <div class="user-cell-name">${escapeHtml(name)}</div>
+              <div class="user-cell-sub">${escapeHtml(username)}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          ${isDoc ? '<span class="badge-admin"><i class="fa-solid fa-crown"></i> Docente / Admin</span>' : '<span class="badge-student"><i class="fa-solid fa-graduation-cap"></i> Estudiante</span>'}
+        </td>
+        <td>
+          <span style="color:var(--text-3);">${date}</span>
+        </td>
+        <td>
+          <span class="status-dot active"></span>
+          <span style="color:var(--emerald-light);font-weight:600;font-size:0.8rem;">Activo</span>
+        </td>
+        <td>
+          <a href="profile.html" class="btn-secondary" style="padding:0.35rem 0.75rem;font-size:0.78rem;border-radius:8px;">
+            <i class="fa-solid fa-user"></i> Ver Ficha
+          </a>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterUsersTable() {
+  const query = (document.getElementById('userSearchInput').value || '').toLowerCase().trim();
+  const roleFilter = document.getElementById('userRoleFilter').value;
+
+  let filtered = allProfiles.filter(p => {
+    const name = (p.full_name || '').toLowerCase();
+    const username = (p.username || '').toLowerCase();
+    const matchesQuery = !query || name.includes(query) || username.includes(query);
+
+    const isDoc = isDocenteProfile(p);
+    let matchesRole = true;
+    if (roleFilter === 'docente') matchesRole = isDoc;
+    if (roleFilter === 'student') matchesRole = !isDoc;
+
+    return matchesQuery && matchesRole;
+  });
+
+  renderUsersTable(filtered);
+}
+
+// ── RENDER POSTS TABLE ────────────────────────────────────────────────
+function renderPostsTable(filteredList = null) {
+  const tbody = document.getElementById('postsTableBody');
+  const list = filteredList || allPosts;
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-3);">No se encontraron publicaciones con los criterios seleccionados.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(post => {
+    const author = allProfiles.find(p => p.id === post.user_id);
+    const authorName = author?.full_name || author?.username || 'Usuario';
+    const authorAvatar = author?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+    const isDoc = isDocenteProfile(author);
+    const cat = extractCategory(post);
+    const contentText = cleanPostContent(post);
+    const date = post.created_at ? new Date(post.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Reciente';
+
+    // Count likes & comments for this post
+    const postLikes = allLikes.filter(l => l.post_id === post.id).length;
+    const postComments = allComments.filter(c => c.post_id === post.id).length;
+
+    return `
+      <tr>
+        <td>
+          <div class="user-cell">
+            <img src="${authorAvatar}" alt="Avatar">
+            <div>
+              <div class="user-cell-name">${escapeHtml(authorName)}</div>
+              <div class="user-cell-sub">${isDoc ? '👑 Docente' : '🎓 Estudiante'}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="cat-tag ${cat.toLowerCase()}">${cat}</span>
+        </td>
+        <td style="max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(contentText)}">
+          ${escapeHtml(contentText || '(Sin texto)')}
+        </td>
+        <td>
+          ${post.image_url ? '<span style="color:var(--cyan);font-weight:700;"><i class="fa-solid fa-image"></i> Foto</span>' : '<span style="color:var(--text-3);">—</span>'}
+        </td>
+        <td>
+          <span style="color:#F472B6;font-weight:700;"><i class="fa-solid fa-heart"></i> ${postLikes}</span>
+        </td>
+        <td>
+          <span style="color:var(--emerald-light);font-weight:700;"><i class="fa-solid fa-comment"></i> ${postComments}</span>
+        </td>
+        <td>
+          <span style="color:var(--text-3);font-size:0.78rem;">${date}</span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterPostsTable() {
+  const query = (document.getElementById('postSearchInput').value || '').toLowerCase().trim();
+  const catFilter = document.getElementById('postCatFilter').value;
+
+  let filtered = allPosts.filter(p => {
+    const content = (p.content || '').toLowerCase();
+    const author = allProfiles.find(prof => prof.id === p.user_id);
+    const authorName = (author?.full_name || author?.username || '').toLowerCase();
+    const matchesQuery = !query || content.includes(query) || authorName.includes(query);
+
+    const cat = extractCategory(p);
+    const matchesCat = (catFilter === 'all') || (cat.toLowerCase() === catFilter.toLowerCase());
+
+    return matchesQuery && matchesCat;
+  });
+
+  renderPostsTable(filtered);
+}
+
+// ── RENDER DIAGNOSTICS ────────────────────────────────────────────────
+function renderDiagnostics() {
+  // Climate diagnosis
+  const totalPosts = allPosts.length;
+  const dudaPosts = allPosts.filter(p => extractCategory(p) === 'Duda').length;
+  const materialPosts = allPosts.filter(p => extractCategory(p) === 'Material').length;
+  const totalComments = allComments.length;
+
+  const climateEl = document.getElementById('diagClimate');
+  if (totalPosts === 0) {
+    climateEl.innerHTML = 'El campus está comenzando su ciclo. Se recomienda publicar un aviso inicial para dar la bienvenida al grupo.';
+  } else {
+    const dudaPct = Math.round((dudaPosts / totalPosts) * 100);
+    const avgAnswers = (totalComments / totalPosts).toFixed(1);
+
+    climateEl.innerHTML = `
+      <p style="margin-bottom:0.6rem;">• El <strong>${dudaPct}%</strong> de las publicaciones corresponden a preguntas académicas o dudas puntuales.</p>
+      <p style="margin-bottom:0.6rem;">• Cada publicación recibe en promedio <strong>${avgAnswers} respuestas o comentarios</strong> de la comunidad.</p>
+      <p style="margin-bottom:0.6rem;">• Se han compartido <strong>${materialPosts} recursos educativos y apuntes</strong> para estudio colaborativo.</p>
+      <div style="margin-top:0.85rem;padding:0.75rem;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:10px;color:var(--emerald-light);font-weight:700;">
+        <i class="fa-solid fa-square-check"></i> Estado general: Dinámico y participativo.
+      </div>
+    `;
+  }
+
+  // Top students (most posts or comments)
+  const userActivity = {};
+  allPosts.forEach(p => {
+    if (!userActivity[p.user_id]) userActivity[p.user_id] = 0;
+    userActivity[p.user_id] += 3; // 3 points per post
+  });
+  allComments.forEach(c => {
+    if (!userActivity[c.user_id]) userActivity[c.user_id] = 0;
+    userActivity[c.user_id] += 2; // 2 points per comment
+  });
+
+  const sortedUserIds = Object.keys(userActivity).sort((a, b) => userActivity[b] - userActivity[a]).slice(0, 5);
+  const topListEl = document.getElementById('topStudentsList');
+
+  if (sortedUserIds.length === 0) {
+    topListEl.innerHTML = '<p style="color:var(--text-3);">Aún no hay actividad registrada.</p>';
+  } else {
+    topListEl.innerHTML = sortedUserIds.map((uid, index) => {
+      const user = allProfiles.find(p => p.id === uid);
+      const name = user?.full_name || user?.username || 'Estudiante';
+      const avatar = user?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+      const pts = userActivity[uid];
+      const medals = ['🥇', '🥈', '🥉', '⭐', '✨'];
+
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.85rem;background:var(--bg-input);border-radius:10px;border:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:0.65rem;">
+            <span style="font-size:1.2rem;">${medals[index] || '•'}</span>
+            <img src="${avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+            <div>
+              <div style="font-size:0.86rem;font-weight:700;color:#fff;">${escapeHtml(name)}</div>
+              <div style="font-size:0.72rem;color:var(--text-3);">${isDocenteProfile(user) ? 'Docente' : 'Estudiante'}</div>
+            </div>
+          </div>
+          <span style="font-size:0.82rem;font-weight:800;color:var(--amber-light);">${pts} pts de interacción</span>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// ── TAB SWITCHER ──────────────────────────────────────────────────────
+function switchTab(tabId) {
+  document.getElementById('tabBtnUsers').classList.remove('active');
+  document.getElementById('tabBtnPosts').classList.remove('active');
+  document.getElementById('tabBtnDiagnostics').classList.remove('active');
+
+  document.getElementById('tabContentUsers').style.display = 'none';
+  document.getElementById('tabContentPosts').style.display = 'none';
+  document.getElementById('tabContentDiagnostics').style.display = 'none';
+
+  if (tabId === 'users') {
+    document.getElementById('tabBtnUsers').classList.add('active');
+    document.getElementById('tabContentUsers').style.display = 'block';
+  } else if (tabId === 'posts') {
+    document.getElementById('tabBtnPosts').classList.add('active');
+    document.getElementById('tabContentPosts').style.display = 'block';
+  } else if (tabId === 'diagnostics') {
+    document.getElementById('tabBtnDiagnostics').classList.add('active');
+    document.getElementById('tabContentDiagnostics').style.display = 'block';
+  }
+}
+
+// ── CSV EXPORT UTILITIES ──────────────────────────────────────────────
+function downloadCSV(filename, csvContent) {
+  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportUsersCSV() {
+  let csv = 'ID,Nombre Completo,Usuario,Rol,Fecha Registro\n';
+  allProfiles.forEach(p => {
+    const rol = isDocenteProfile(p) ? 'Docente/Admin' : 'Estudiante';
+    const date = p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : '';
+    csv += `"${p.id}","${(p.full_name || '').replace(/"/g, '""')}","${(p.username || '').replace(/"/g, '""')}","${rol}","${date}"\n`;
+  });
+  downloadCSV(`CampusNet_Reporte_Integrantes_${Date.now()}.csv`, csv);
+  showToast('Reporte de integrantes exportado a CSV', 'success');
+}
+
+function exportPostsCSV() {
+  let csv = 'ID,Autor ID,Autor Nombre,Categoria,Contenido,Adjunto,Likes,Comentarios,Fecha\n';
+  allPosts.forEach(p => {
+    const author = allProfiles.find(prof => prof.id === p.user_id);
+    const authorName = author?.full_name || author?.username || '';
+    const cat = extractCategory(p);
+    const content = cleanPostContent(p).replace(/"/g, '""');
+    const likes = allLikes.filter(l => l.post_id === p.id).length;
+    const comments = allComments.filter(c => c.post_id === p.id).length;
+    const date = p.created_at || '';
+    csv += `"${p.id}","${p.user_id}","${authorName}","${cat}","${content}","${p.image_url ? 'SI' : 'NO'}",${likes},${comments},"${date}"\n`;
+  });
+  downloadCSV(`CampusNet_Reporte_Publicaciones_${Date.now()}.csv`, csv);
+  showToast('Reporte de publicaciones exportado a CSV', 'success');
+}
+
+function exportGeneralCSV() {
+  let csv = 'RESUMEN EJECUTIVO CAMPUSNET\n';
+  csv += `Fecha de Generacion,"${new Date().toLocaleString()}"\n`;
+  csv += `Total Integrantes,${allProfiles.length}\n`;
+  csv += `Total Docentes,${allProfiles.filter(p => isDocenteProfile(p)).length}\n`;
+  csv += `Total Estudiantes,${allProfiles.filter(p => !isDocenteProfile(p)).length}\n`;
+  csv += `Total Publicaciones,${allPosts.length}\n`;
+  csv += `Total Comentarios,${allComments.length}\n`;
+  csv += `Total Reacciones Likes,${allLikes.length}\n`;
+  csv += `Total Mensajes de Tutoria,${allMessages.length}\n\n`;
+
+  csv += 'LISTADO DE INTEGRANTES\n';
+  csv += 'Nombre,Usuario,Rol,Fecha Registro\n';
+  allProfiles.forEach(p => {
+    const rol = isDocenteProfile(p) ? 'Docente/Admin' : 'Estudiante';
+    csv += `"${(p.full_name || '').replace(/"/g, '""')}","${(p.username || '').replace(/"/g, '""')}","${rol}","${p.created_at || ''}"\n`;
+  });
+
+  downloadCSV(`CampusNet_Reporte_General_Ejecutivo_${Date.now()}.csv`, csv);
+  showToast('Reporte general ejecutivo descargado', 'success');
+}
+
+// Helpers
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  window.location.href = 'index.html';
+}
+  </script>
+</body>
+</html>

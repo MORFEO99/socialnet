@@ -827,6 +827,9 @@ img { max-width: 100%; }
       <a href="feed.html" class="btn-secondary" style="padding:0.5rem 0.95rem;font-size:0.82rem;">
         <i class="fa-solid fa-house"></i> Volver a la página principal
       </a>
+      <a href="reports.html" id="navAdminBtnProfile" class="btn-secondary" style="display:none;padding:0.5rem 0.95rem;font-size:0.82rem;background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(236,72,153,0.15));border-color:rgba(245,158,11,0.45);color:#FBBF24;font-weight:700;">
+        <i class="fa-solid fa-chart-pie" style="color:#F59E0B;"></i> Reportes
+      </a>
       <a href="messages.html" class="btn-icon" title="Mensajes">
         <i class="fa-solid fa-comments"></i>
       </a>
@@ -1093,6 +1096,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadProfile(targetId);
   await loadUserPosts(targetId);
+
+  const myProfile = isMyProfile ? profileUser : await getProfile(currentUser.id);
+  if (isDocenteProfile(myProfile)) {
+    const navAdmin = document.getElementById('navAdminBtnProfile');
+    if (navAdmin) navAdmin.style.display = 'inline-flex';
+  }
 });
 
 async function loadProfile(userId) {
@@ -1129,6 +1138,10 @@ async function loadProfile(userId) {
       <button class="btn-secondary" onclick="openChangePasswordModal()">
         <i class="fa-solid fa-key" style="color:var(--pink);"></i> Cambiar Clave
       </button>
+      ${isDoc ? `
+      <a href="reports.html" class="btn-secondary" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(236,72,153,0.15));border-color:rgba(245,158,11,0.45);color:#FBBF24;font-weight:700;">
+        <i class="fa-solid fa-chart-pie" style="color:#F59E0B;"></i> Panel de Reportes
+      </a>` : ''}
     `;
   } else {
     actions.innerHTML = `

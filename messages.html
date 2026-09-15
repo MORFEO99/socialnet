@@ -909,6 +909,9 @@ img { max-width: 100%; }
       <a href="feed.html" class="btn-secondary" style="padding:0.5rem 0.95rem;font-size:0.82rem;">
         <i class="fa-solid fa-house"></i> Volver a la página principal
       </a>
+      <a href="reports.html" id="navAdminBtnMessages" class="btn-secondary" style="display:none;padding:0.5rem 0.95rem;font-size:0.82rem;background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(236,72,153,0.15));border-color:rgba(245,158,11,0.45);color:#FBBF24;font-weight:700;">
+        <i class="fa-solid fa-chart-pie" style="color:#F59E0B;"></i> Reportes
+      </a>
       <a href="profile.html" class="nav-profile-btn">
         <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" id="navAvatar" class="nav-profile-avatar" alt="Avatar">
       </a>
@@ -1125,6 +1128,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const profile = await getProfile(currentUser.id);
   if (profile?.avatar_url) document.getElementById('navAvatar').src = profile.avatar_url;
+  if (isDocenteProfile(profile)) {
+    const navAdmin = document.getElementById('navAdminBtnMessages');
+    if (navAdmin) navAdmin.style.display = 'inline-flex';
+  }
 
   await loadContacts();
   setupRealtimeMessages();

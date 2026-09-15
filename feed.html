@@ -793,6 +793,12 @@ img { max-width: 100%; }
         <span style="color:#fff;font-weight:700;">Sala Virtual</span>
       </button>
 
+      <!-- Panel de Reportes (Solo Docente / Administrador) -->
+      <a href="reports.html" id="navAdminBtn" class="btn-secondary" style="display:none;padding:0.5rem 0.9rem;border-radius:10px;font-size:0.82rem;background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(236,72,153,0.15));border-color:rgba(245,158,11,0.45);color:#FBBF24;font-weight:700;" title="Panel de Reportes y Auditoría">
+        <i class="fa-solid fa-chart-pie" style="color:#F59E0B;"></i>
+        <span>Reportes</span>
+      </a>
+
       <!-- Mensajes Directos -->
       <a href="messages.html" class="btn-icon" title="Mensajes">
         <i class="fa-solid fa-comments"></i>
@@ -882,6 +888,11 @@ img { max-width: 100%; }
           <a href="profile.html" class="sidebar-link">
             <i class="fa-solid fa-user-gear" style="color:var(--indigo);"></i>
             <span>Ajustes de Perfil</span>
+          </a>
+          <a href="reports.html" id="adminReportsLink" class="sidebar-link" style="display:none;background:rgba(245, 158, 11, 0.12);border:1px solid rgba(245, 158, 11, 0.3);color:#FBBF24;">
+            <i class="fa-solid fa-chart-line" style="color:#F59E0B;"></i>
+            <span>Panel de Reportes</span>
+            <span class="badge-docente" style="margin-left:auto;font-size:0.6rem;padding:2px 6px;">ADMIN</span>
           </a>
         </div>
       </div>
@@ -1246,6 +1257,10 @@ async function loadCurrentUserProfile() {
     document.getElementById('userRoleBadge').innerHTML = '<i class="fa-solid fa-crown"></i> Docente / Admin';
     const choiceDoc = document.getElementById('choiceAvisoDocente');
     if (choiceDoc) choiceDoc.style.display = 'inline-block';
+    const adminLink = document.getElementById('adminReportsLink');
+    if (adminLink) adminLink.style.display = 'flex';
+    const navAdmin = document.getElementById('navAdminBtn');
+    if (navAdmin) navAdmin.style.display = 'inline-flex';
   }
 }
 
