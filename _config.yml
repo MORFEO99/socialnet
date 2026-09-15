@@ -1,0 +1,9 @@
+# Minimal Jekyll config to prevent build failures
+theme: null
+plugins: []
+markdown: kramdown
+kramdown:
+  input: GFM
+exclude:
+  - README.md
+  - .github
